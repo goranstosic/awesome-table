@@ -10,6 +10,6 @@ License: GPL2
 */
 
 function awesome_table_init() {
-    echo '<p>My Awesome Table is activated!</p>';
+    echo '<p>My Awesome Table is activated! Pipni mir</p>';
 }
 add_action('admin_notices', 'awesome_table_init');
