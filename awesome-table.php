@@ -12,15 +12,11 @@ License: GPL2
 global $my_awesome_table_version;
 $my_awesome_table_version = '1.0';
 
-// Define the shortcode for the form
-// Function to create the database table if it doesn't exist
 function create_database_table() {
     global $wpdb;
 
-    // Table name
     $table_name = $wpdb->prefix . 'form_data';
 
-    // SQL to create table
     $charset_collate = $wpdb->get_charset_collate();
     $sql = "CREATE TABLE IF NOT EXISTS $table_name (
         id mediumint(9) NOT NULL AUTO_INCREMENT,
@@ -29,28 +25,21 @@ function create_database_table() {
         PRIMARY KEY (id)
     ) $charset_collate;";
 
-    // Include upgrade.php for dbDelta
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
-    // Create or upgrade table
     dbDelta($sql);
 }
 
-// Function to handle form submission
 function handle_form_submission() {
     global $wpdb;
 
-    // Retrieve form data
     $name = sanitize_text_field($_POST['name']);
     $email = sanitize_email($_POST['email']);
 
-    // Create database table if it doesn't exist
     create_database_table();
 
-    // Table name
     $table_name = $wpdb->prefix . 'form_data';
 
-    // Insert form data into the database
     $wpdb->insert(
         $table_name,
         array(
@@ -59,16 +48,13 @@ function handle_form_submission() {
         )
     );
 
-    // Redirect back to the page where the form was submitted from
     wp_redirect($_SERVER['HTTP_REFERER']);
     exit;
 }
 
-// Hook the form submission handler
 add_action('admin_post_handle_form_submission', 'handle_form_submission');
 add_action('admin_post_nopriv_handle_form_submission', 'handle_form_submission');
 
-// Register the shortcode for the form
 function my_form_shortcode() {
     ob_start(); ?>
 
@@ -86,28 +72,23 @@ function my_form_shortcode() {
 }
 add_shortcode('my_form', 'my_form_shortcode');
 
-// Function to display data from the database table with search functionality
-// Function to display data from the database table with search functionality
 function display_form_data($atts) {
     global $wpdb;
 
     $search='';
     if (!empty($_REQUEST['search'])) {
 
-        // Sanitize search keyword
         $search = sanitize_text_field($_REQUEST['search']);
     }
 
-    // Table name
     $table_name = $wpdb->prefix . 'form_data';
 
-    // SQL to query data with search functionality
     $sql = "SELECT * FROM $table_name";
     if (!empty($search)) {
         $sql .= $wpdb->prepare(" WHERE name LIKE '%s' OR email LIKE '%s'", '%' . $wpdb->esc_like($search) . '%', '%' . $wpdb->esc_like($search) . '%');
     }
     $results = $wpdb->get_results($sql);
-    // Display the results
+
     ob_start(); ?>
 
     <div>
@@ -140,4 +121,63 @@ function display_form_data($atts) {
 }
 add_shortcode('display_form_data', 'display_form_data');
 
+class My_Form_API {
 
+    public function __construct() {
+        add_action('rest_api_init', array($this, 'register_routes'));
+    }
+
+    public function register_routes() {
+        register_rest_route('awesome-table/v1', '/insert', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'insert_data'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route('awesome-table/v1', '/select', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'select_data'),
+            'permission_callback' => '__return_true',
+        ));
+    }
+
+    public function insert_data(WP_REST_Request $request) {
+        global $wpdb;
+
+        $name = sanitize_text_field($request->get_param('name'));
+        $email = sanitize_email($request->get_param('email'));
+
+        // Create the database table if it doesn't exist
+        create_database_table();
+
+        // Insert data
+        $table_name = $wpdb->prefix . 'form_data';
+        $wpdb->insert(
+            $table_name,
+            array(
+                'name' => $name,
+                'email' => $email,
+            )
+        );
+
+        return new WP_REST_Response(array('message' => 'Data inserted successfully'), 200);
+    }
+
+    public function select_data(WP_REST_Request $request) {
+        global $wpdb;
+
+        $search = sanitize_text_field($request->get_param('search'));
+
+        // Query data
+        $table_name = $wpdb->prefix . 'form_data';
+        $sql = "SELECT * FROM $table_name";
+        if (!empty($search)) {
+            $sql .= $wpdb->prepare(" WHERE name LIKE %s OR email LIKE %s", '%' . $wpdb->esc_like($search) . '%', '%' . $wpdb->esc_like($search) . '%');
+        }
+        $results = $wpdb->get_results($sql);
+
+        return new WP_REST_Response($results, 200);
+    }
+}
+
+new My_Form_API();
