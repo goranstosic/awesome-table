@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Awesome Table
-Plugin URI: http://example.com/
-Description: A brief description of what the plugin does.
+Plugin URI:
+Description: Create a custom table in the WordPress database with two shortcodes for easy data submission and search functionality, and extend the WordPress REST API to expose Insert and Select operations on the table.
 Version: 1.0
 Author: Goran Stošić
-Author URI: http://example.com/
+Author URI:
 License: GPL2
 */
 
@@ -147,10 +147,8 @@ class My_Form_API {
         $name = sanitize_text_field($request->get_param('name'));
         $email = sanitize_email($request->get_param('email'));
 
-        // Create the database table if it doesn't exist
         create_database_table();
 
-        // Insert data
         $table_name = $wpdb->prefix . 'form_data';
         $wpdb->insert(
             $table_name,
@@ -168,7 +166,6 @@ class My_Form_API {
 
         $search = sanitize_text_field($request->get_param('search'));
 
-        // Query data
         $table_name = $wpdb->prefix . 'form_data';
         $sql = "SELECT * FROM $table_name";
         if (!empty($search)) {
