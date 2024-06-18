@@ -8,5 +8,3 @@ Has shortcode to display form that accepts user input, sanitizes it and then ins
 Has a shortcode to display the data from the custom table and has search functionality.
 
 Has custom endpoints to expose Insert and Select on custom table.
-
-Crazy stuff, I know.
